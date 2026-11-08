@@ -110,24 +110,29 @@ if df is not None:
                     
                     st.divider()
                     
-                    # Visualizations side-by-side
-                    col_cm, col_cr = st.columns([1.2, 1])
+                    # Updated Classification Report as a styled DataFrame
+                    st.markdown("### Classification Report")
+                    report_dict = classification_report(y_test, y_pred, target_names=le.classes_, output_dict=True)
+                    report_df = pd.DataFrame(report_dict).transpose()
                     
-                    with col_cm:
-                        st.markdown("### Confusion Matrix")
-                        cm = confusion_matrix(y_test, y_pred)
-                        fig, ax = plt.subplots(figsize=(7, 5))
-                        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                                    xticklabels=le.classes_, yticklabels=le.classes_, cbar=False)
-                        plt.ylabel('Actual Class')
-                        plt.xlabel('Predicted Class')
-                        plt.xticks(rotation=45, ha='right')
-                        st.pyplot(fig)
-                        
-                    with col_cr:
-                        st.markdown("### Classification Report")
-                        report = classification_report(y_test, y_pred, target_names=le.classes_)
-                        st.text(report)
+                    # Style the dataframe for a professional look
+                    st.dataframe(
+                        report_df.style.format("{:.4f}").background_gradient(cmap='Blues', subset=['f1-score']), 
+                        use_container_width=True
+                    )
+                    
+                    st.divider()
+                    
+                    # Updated Confusion Matrix positioned below the report
+                    st.markdown("### Confusion Matrix")
+                    cm = confusion_matrix(y_test, y_pred)
+                    fig, ax = plt.subplots(figsize=(8, 6))
+                    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                                xticklabels=le.classes_, yticklabels=le.classes_, cbar=False)
+                    plt.ylabel('Actual Class')
+                    plt.xlabel('Predicted Class')
+                    plt.xticks(rotation=45, ha='right')
+                    st.pyplot(fig)
                         
                 except Exception as e:
                     st.error(f"Error loading or evaluating model: {e}")
