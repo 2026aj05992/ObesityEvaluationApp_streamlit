@@ -4,16 +4,17 @@ import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 from sklearn.metrics import (
     accuracy_score, roc_auc_score, precision_score, 
     recall_score, f1_score, matthews_corrcoef, 
     classification_report, confusion_matrix
 )
 
-# Set Page title
+# Must be the first Streamlit command
 st.set_page_config(page_title="Obesity Classifier Evaluation", layout="wide", page_icon="📊")
 
-# Custom CSS for better card styling
+# Custom CSS for better metric card styling
 st.markdown("""
     <style>
     div[data-testid="metric-container"] {
@@ -26,7 +27,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("📊 Machine Learning Model Evaluation Dashboard")
-st.markdown("Evaluate pre-trained classification models on the **Obesity Levels** dataset. Upload your hold-out test data to begin.")
+st.markdown("Evaluate pre-trained classification models on the **Obesity Levels** dataset. The test data is loaded automatically from the repository, or you can upload a custom hold-out set.")
 
 # Define model paths globally
 MODEL_OPTIONS = {
@@ -51,19 +52,27 @@ def evaluate_pipeline(pipeline, X_test, y_test):
         'MCC': matthews_corrcoef(y_test, y_pred)
     }, y_pred
 
-# Sidebar for inputs
+# Sidebar for inputs and automatic data loading
+df = None
 with st.sidebar:
-    st.header("1. Upload Data")
-    uploaded_file = st.file_uploader("Upload test_data.csv", type="csv")
+    st.header("1. Data Source")
+    uploaded_file = st.file_uploader("Upload test_data.csv (Optional)", type="csv")
+    
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.success("✅ Loaded data from uploaded file.")
+    elif os.path.exists('test_data.csv'):
+        df = pd.read_csv('test_data.csv')
+        st.success("✅ Automatically loaded local 'test_data.csv'.")
+    else:
+        st.warning("⚠️ No data found. Please upload 'test_data.csv' or ensure it exists in the repository root.")
     
     st.markdown("---")
-    st.info("**Note:** Ensure the uploaded CSV contains the exact features used during training, plus the 'NObeyesdad' target column.")
+    st.info("**Note:** Ensure the CSV contains the exact features used during training, plus the 'NObeyesdad' target column.")
 
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    
+if df is not None:
     if 'NObeyesdad' not in df.columns:
-        st.error("Target column 'NObeyesdad' not found. Please upload the correct test_data.csv.")
+        st.error("Target column 'NObeyesdad' not found. Please ensure the correct test dataset is loaded.")
     else:
         # Prepare data
         X_test = df.drop('NObeyesdad', axis=1)
@@ -78,7 +87,7 @@ if uploaded_file is not None:
             st.stop()
 
         # UI Layout: Tabs for cleaner organization
-        tab1, tab2, tab3 = st.tabs(["🔍 Single Model View", "📈 Compare All Models", "📄 Dataset Preview"])
+        tab1, tab2, tab3 = st.tabs(["🔍 Single Model View", "📈 Compare All Models", "📄 Data Preview"])
         
         with tab1:
             st.subheader("Individual Model Analysis")
@@ -125,7 +134,7 @@ if uploaded_file is not None:
 
         with tab2:
             st.subheader("Model Comparison Dashboard")
-            st.write("Compare the evaluation metrics of all 5 models side-by-side.")
+            st.write("Compare the evaluation metrics of all 5 algorithms side-by-side.")
             
             if st.button("Generate Comparison Graph", type="primary"):
                 with st.spinner("Evaluating all models..."):
@@ -167,4 +176,4 @@ if uploaded_file is not None:
             st.write(f"Total instances in test set: **{len(df)}**")
 
 else:
-    st.info("👈 Please upload the 'test_data.csv' file using the sidebar to begin evaluation.")
+    st.info("👈 Waiting for test data to be loaded or uploaded.")
